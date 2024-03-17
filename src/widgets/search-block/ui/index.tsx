@@ -27,20 +27,26 @@ const AgeComponent: React.FC = () => {
   const [previousName, setPreviousName] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false); // Флаг для отслеживания статуса отправки запроса
   const [nameValue, setNameValue] = useState<string>('');
-  const [submitted, setSubmitted] = useState<boolean>(false);
+  const [submitted, setSubmitted] = useState<number>(0);//для проверки повторной отправки формы после нажатия кнопки 
   const [isErr, setIsErr] = useState<string>('');
   const nameInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
-    if(nameValue&&(submitted==false)){
+    if(nameValue&&(submitted>0)){
       const timer = setTimeout(() => {
         handleAgeSubmit({ name: nameValue });
       }, 3000);
       return () => clearTimeout(timer);
     } 
-    setSubmitted(false);
+    setSubmitted(submitted-1);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nameValue, setNameValue]);
+
+  useEffect(() => {
+    if (nameInputRef.current) {
+      nameInputRef.current.value = nameValue;
+    }
+  }, [nameValue]);
 
   const { error, isLoading } = useQuery({
       queryKey: ['age'],
@@ -76,7 +82,7 @@ const AgeComponent: React.FC = () => {
       setAgeUser(dataAge.age);
       reset();
       setPreviousName(nameValue);// Запоминаем предыдущее имя
-      
+      setSubmitted(submitted+1);
     } catch (error) {
         if(error instanceof Error){
           setIsErr(error?.message)
@@ -88,12 +94,6 @@ const AgeComponent: React.FC = () => {
       setLoading(false);// Сбрасываем флаг отправки запроса
     }
   };
-
-  useEffect(() => {
-    if (nameInputRef.current) {
-      nameInputRef.current.value = nameValue;
-    }
-  }, [nameValue]);
       
   if (error) {
     return <div>Error: {error.message}</div>;
@@ -101,8 +101,9 @@ const AgeComponent: React.FC = () => {
 
   const handleClick = () => {
     if (!loading) {
-      setSubmitted(true);
+      
       handleAgeSubmit({ name: nameValue }); 
+      setSubmitted(submitted-1);
     }
 };
 
@@ -130,7 +131,7 @@ const AgeComponent: React.FC = () => {
                   type="submit"
                   after={<Icon24ChecksOutline/>}
                   onClick={handleClick}
-                  disabled={loading || submitted}
+                  disabled={loading}
                 >
                   Получить возраст
                 </Button>
